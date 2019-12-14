@@ -1,21 +1,25 @@
 #include <bits/stdc++.h>
 
+#define processo list<blocoProcesso>
+
 using namespace std;
 
 int tempo_decorrido, tempo_final;
 
-struct processo{
+struct blocoProcesso{
+    int id;
     int tempo_de_entrada;
     int cpu;
     int io;
 
-    processo(int t, int cpu, int io){
+    blocoProcesso(int t, int cpu, int io, int id){
         this->tempo_de_entrada = t;
         this->io = io;
         this->cpu = cpu;
+        this-> id = id;
     }
 
-    processo(){
+    blocoProcesso(){
 
     }
 
@@ -28,39 +32,48 @@ struct processo{
     }
 
     void print(){
-        printf("%d %d %d\n", tempo_de_entrada, cpu, io);
+        printf("%d %d %d %d\n", tempo_de_entrada, cpu, io, id);
     }
 
 };
 
-bool comp(list<processo> a, list<processo> b){
+
+//implementacao da politica de escalonamento FIFO através de uma priority queue
+//utilizando o tempo de entrada como criterio de seleção
+bool comp(processo a, processo b){
     if(a.front().cpu == 0){
         return false;
     }
     else if(b.front().cpu == 0){
         return true;
     }
-    return a.front().tempo_de_entrada >= b.front().tempo_de_entrada;
+    if(a.front().tempo_de_entrada == b.front().tempo_de_entrada) return a.front().id > b.front().id;
+    return a.front().tempo_de_entrada > b.front().tempo_de_entrada;
 }
 
-priority_queue< list<processo>, vector< list <processo> >, decltype(&comp)> fifo_queue(&comp);
+//
+priority_queue< processo, vector<processo>, decltype(&comp)> fifo_queue(&comp);
 
 int main(){
 
-    std::ifstream in("input.txt");
-    std::streambuf *cinbuf = std::cin.rdbuf();
-    std::cin.rdbuf(in.rdbuf());
+    //mudando a entrada padrão para um arquivo de texto
+    //std::ifstream in("input.txt");
+    //std::streambuf *cinbuf = std::cin.rdbuf();
+    //std::cin.rdbuf(in.rdbuf());
     
-    int cpu, io, val;
+    int cpu, io, val, count = 0;
     string linha, bloco, tipo;
-    processo executado;
-    list<processo> executando;
+    blocoProcesso executado;
+    processo executando;
     bool first;
 
+
+    //leitura 
     while(getline(cin, linha)){
+        count++;
         stringstream L(linha);
         cpu = 0; io = 0;
-        list<processo> lista;
+        processo lista;
         first = true;
         while(getline(L, bloco, ',')){
             istringstream ss;
@@ -68,7 +81,7 @@ int main(){
             ss >> val >> tipo;
             if(tipo == "cpu"){
                 if(!first){
-                    processo leitura(0, cpu, io);
+                    blocoProcesso leitura(0, cpu, io, count);
                     lista.push_back(leitura);
                 }
                 io = 0;
@@ -79,10 +92,13 @@ int main(){
             }
             first = false;
         }
-        processo leitura(0, cpu, io);
+        blocoProcesso leitura(0, cpu, io, count);
         lista.push_back(leitura);
         fifo_queue.push(lista);
     }
+
+
+    //simulando a execução dos processos
     tempo_decorrido = 0;
     tempo_final = 0;
     while(!fifo_queue.empty()){
@@ -90,9 +106,9 @@ int main(){
         fifo_queue.pop();
         executado = executando.front();
         executado.tempo_de_entrada = tempo_decorrido = max(tempo_decorrido, executado.tempo_de_entrada);
-        //executado.print();
+        executado.print();
         tempo_decorrido += executado.getTempoExecucao();
-        //cout << "tempo total " << tempo_decorrido << endl; 
+        cout << "tempo total " << tempo_decorrido << endl; 
         executando.pop_front();
         tempo_final = max(tempo_final,executado.getTempoFim());
         if(!executando.empty()){
